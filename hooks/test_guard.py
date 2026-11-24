@@ -192,6 +192,75 @@ class CacheGuardTests(unittest.TestCase):
         # Retry confirms
         self.assertIsNone(guard.dispatch(p))
 
+    def test_fingerprint_covers_global_rules_and_home_agent_skills(self) -> None:
+        global_agents = self.fake_home / ".gemini" / "config" / "AGENTS.md"
+        global_gemini = self.fake_home / ".gemini" / "config" / "GEMINI.md"
+        skill = self.fake_home / ".agents" / "skills" / "demo" / "SKILL.md"
+        skill.parent.mkdir(parents=True, exist_ok=True)
+        global_agents.write_text("# global agents\n", encoding="utf-8")
+        global_gemini.write_text("# global gemini\n", encoding="utf-8")
+        skill.write_text("# skill\n", encoding="utf-8")
+
+        fp = guard.compute_customization_fingerprint([str(self.ws)], str(self.ws))
+        for path in (global_agents, global_gemini, skill):
+            self.assertIn(str(path.resolve()), fp, f"Missing fingerprint entry for {path}")
+
+    def test_is_customization_path_covers_global_rules_and_agent_skills(self) -> None:
+        global_agents = self.fake_home / ".gemini" / "config" / "AGENTS.md"
+        global_gemini = self.fake_home / ".gemini" / "config" / "GEMINI.md"
+        skill = self.fake_home / ".agents" / "skills" / "demo" / "SKILL.md"
+        skill.parent.mkdir(parents=True, exist_ok=True)
+        for path in (global_agents, global_gemini, skill):
+            path.write_text("# rule\n", encoding="utf-8")
+            matched, category = guard.is_customization_path(str(path))
+            self.assertTrue(matched, f"Expected customization match for {path}")
+            self.assertTrue(category)
+
+        plugin_state = self.fake_home / ".gemini" / "antigravity" / "plugin_data" / "cache-guard" / "config.json"
+        plugin_state.parent.mkdir(parents=True, exist_ok=True)
+        plugin_state.write_text("{}\n", encoding="utf-8")
+        self.assertFalse(guard.is_customization_path(str(plugin_state))[0])
+
+    def test_inspect_shell_command_exempts_plugin_data_and_external_git(self) -> None:
+        # plugin_data is runtime state: never a prompt customization hit.
+        for cmd in [
+            "cp /tmp/quota.json ~/.gemini/antigravity/plugin_data/cache-guard/config.json",
+            "rm -f ~/.gemini/antigravity/plugin_data/context-meter/server.pid",
+            "python3 -c 'open(\"/home/x/.gemini/antigravity/plugin_data/cache-guard/state.json\", \"w\").write(\"{}\")'",
+        ]:
+            self.assertEqual(guard.inspect_shell_command(cmd), (False, ""), f"plugin_data flagged: {cmd}")
+
+        # External git inspection / checkout outside ~/.gemini/config and ~/.agents.
+        for cmd in [
+            "git status",
+            "git -C ~/src/other-repo checkout -- main",
+            "git diff HEAD~1 > /tmp/patch.diff",
+            "git -C ~/src/other-repo restore src/app.py",
+        ]:
+            self.assertEqual(guard.inspect_shell_command(cmd), (False, ""), f"external git flagged: {cmd}")
+
+        # Real customization mutations are still detected.
+        for cmd in [
+            "echo '# rule' >> ~/.gemini/config/AGENTS.md",
+            "cp /tmp/skill.md ~/.agents/skills/demo/SKILL.md",
+            "git checkout -- AGENTS.md && echo '# rule' >> GEMINI.md",
+            "rm ~/.gemini/config/GEMINI.md",
+        ]:
+            matched, category = guard.inspect_shell_command(cmd)
+            self.assertTrue(matched, f"Missed customization mutation: {cmd}")
+            self.assertTrue(category)
+
+    def test_pretool_shell_plugin_data_and_external_git_are_noop(self) -> None:
+        make_transcript(self.transcript, tokens_in=5000, tokens_cached=75000, model="gemini-4-neon-high")
+        for cmd in [
+            "cp /tmp/quota.json ~/.gemini/antigravity/plugin_data/context-meter/statusline-quota.json",
+            "git -C ~/src/other-repo status",
+            "git -C ~/src/other-repo diff --stat",
+        ]:
+            p = self._base_payload("PreToolUse")
+            p["toolCall"] = {"name": "run_command", "args": {"CommandLine": cmd}}
+            self.assertIsNone(guard.dispatch(p), f"Did not expect stop for: {cmd}")
+
     def test_shell_wrapper_emits_empty_stdout_on_noop_and_json_on_stop(self) -> None:
         wrapper = Path(__file__).with_name("cache-guard.sh")
         env = dict(os.environ)

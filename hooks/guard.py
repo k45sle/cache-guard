@@ -81,6 +81,34 @@ CUSTOM_PATH_HINT_RE = re.compile(
     r"|(?:^|[/\s'\"`])(?:\.agents|\.agent|_agents|_agent)/(?:rules|skills|plugins|hooks\.json|mcp_config\.json|rules\.json|skills\.json|plugins\.json))",
     re.IGNORECASE,
 )
+# Prompt-customization roots: a git command touching one of these is never "external".
+CUSTOMIZATION_ROOT_HINT_RE = re.compile(
+    r"\.gemini[/\\]config\b"
+    r"|\.gemini[/\\]antigravity(?:-[a-z]+)?[/\\]settings\.json\b"
+    r"|(?:^|[\s'\"`/\\])(?:\.agents|\.agent|_agents|_agent)(?:[/\\\s'\"`]|$)",
+    re.IGNORECASE,
+)
+# …/plugin_data/… is plugin runtime state (locks, logs, counters), never prompt text.
+PLUGIN_DATA_REF_RE = re.compile(r"[^\s'\"]*plugin_data[/\\][^\s'\"]*", re.IGNORECASE)
+# git subcommands that only inspect or switch an external checkout.
+GIT_SUBCMD_RE = re.compile(
+    r"\bgit\b(?:\s+(?:-[Cc]\s+\S+|--[a-z-]+(?:=\S+)?))*\s+([a-z-]+)",
+    re.IGNORECASE,
+)
+GIT_EXTERNAL_SUBCMDS = {
+    "status",
+    "diff",
+    "log",
+    "show",
+    "checkout",
+    "switch",
+    "restore",
+    "stash",
+    "rev-parse",
+    "describe",
+    "ls-files",
+    "blame",
+}
 
 
 def home_dir() -> Path:
@@ -382,7 +410,7 @@ def compute_customization_fingerprint(workspace_paths: List[str], cwd: str) -> D
     h = home_dir()
     global_cfg = h / ".gemini" / "config"
     if global_cfg.is_dir():
-        for fname in ("config.json", "mcp_config.json", "hooks.json", "rules.json", "skills.json", "plugins.json"):
+        for fname in sorted(CONFIG_MANIFEST_FILES | TOP_RULE_FILES):
             f = global_cfg / fname
             sig = stat_sig(f)
             if sig:
@@ -400,6 +428,10 @@ def compute_customization_fingerprint(workspace_paths: List[str], cwd: str) -> D
                 if sig:
                     fp[str(sf)] = sig
         add_plugin_dir_files(global_cfg / "plugins", fp)
+
+    # Home-level customization dirs (~/.agents/skills/*/SKILL.md, ~/.agents/rules/*.md, …)
+    for ad in AGENT_DIR_NAMES:
+        add_agent_dir_files(h / ad, fp)
 
     cli_settings = h / ".gemini" / "antigravity-cli" / "settings.json"
     if cli_settings.is_file():
@@ -506,7 +538,7 @@ def is_customization_path(abs_path: str) -> Tuple[bool, str]:
     try:
         rel = p.relative_to(global_cfg)
         rel_parts = rel.parts
-        if len(rel_parts) == 1 and name in CONFIG_MANIFEST_FILES:
+        if len(rel_parts) == 1 and name in (CONFIG_MANIFEST_FILES | TOP_RULE_FILES):
             return True, f"global config ({name})"
         if rel_parts and rel_parts[0] == "rules":
             return True, "global rule (~/.gemini/config/rules)"
@@ -519,6 +551,22 @@ def is_customization_path(abs_path: str) -> Tuple[bool, str]:
             return False, ""
     except ValueError:
         pass
+
+    # Home-level ~/.agents|.agent|_agents|_agent customization tree
+    for ad in AGENT_DIR_NAMES:
+        try:
+            rel = p.relative_to(h / ad)
+        except ValueError:
+            continue
+        rel_parts = rel.parts
+        if len(rel_parts) == 1 and name in (CONFIG_MANIFEST_FILES | TOP_RULE_FILES):
+            return True, f"global customization (~/{ad}/{name})"
+        if rel_parts and rel_parts[0] in ("rules", "skills"):
+            return True, f"global {rel_parts[0]} (~/{ad}/{rel_parts[0]})"
+        if rel_parts and rel_parts[0] == "plugins":
+            if name in PLUGIN_PROMPT_FILES or "rules" in rel_parts[2:] or "skills" in rel_parts[2:]:
+                return True, f"global plugin customization ({name})"
+            return False, ""
 
     # Workspace top-level GEMINI.md / AGENTS.md
     if name in TOP_RULE_FILES:
@@ -541,13 +589,36 @@ def is_customization_path(abs_path: str) -> Tuple[bool, str]:
     return False, ""
 
 
+def strip_plugin_data_refs(cmd: str) -> str:
+    """Remove …/plugin_data/… paths from a command line before customization matching."""
+    return PLUGIN_DATA_REF_RE.sub(" ", cmd)
+
+
+def is_external_git_inspection(cmd: str) -> bool:
+    """True for git checkout/status/diff style commands confined to an external checkout."""
+    m = GIT_SUBCMD_RE.search(cmd)
+    if not m or m.group(1).lower() not in GIT_EXTERNAL_SUBCMDS:
+        return False
+    # Anything pointing into a customization root (~/.gemini/config, ~/.agents, …) is never exempt.
+    if CUSTOM_PATH_HINT_RE.search(cmd) or CUSTOMIZATION_ROOT_HINT_RE.search(cmd):
+        return False
+    return True
+
+
 def inspect_shell_command(cmd: str) -> Tuple[bool, str]:
     """Detect shell commands that mutate prompt customizations."""
     if not cmd:
         return False, ""
     if AGY_MUTATE_RE.search(cmd):
         return True, "CLI plugin/MCP mutation (`agy plugin`/`agy mcp`)"
-    if CUSTOM_PATH_HINT_RE.search(cmd) and SHELL_MUTATE_OP_RE.search(cmd):
+    # plugin_data is runtime state, never prompt text: writes there cannot invalidate the cache.
+    scrubbed = strip_plugin_data_refs(cmd)
+    if not scrubbed.strip():
+        return False, ""
+    # `git status/diff/checkout` in an external checkout leaves the prompt prefix untouched.
+    if is_external_git_inspection(scrubbed):
+        return False, ""
+    if CUSTOM_PATH_HINT_RE.search(scrubbed) and SHELL_MUTATE_OP_RE.search(scrubbed):
         return True, "shell command modifying prompt customization files"
     return False, ""
 
