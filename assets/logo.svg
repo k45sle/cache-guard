@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="34" y1="24" x2="94" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="56" y1="44" x2="74" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <path d="M64 20L98 34V61C98 84.5 83.4 101.6 64 109C44.6 101.6 30 84.5 30 61V34L64 20Z" fill="url(#shield)" fill-opacity="0.18" stroke="url(#shield)" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M68 40L48 67H62L59 89L80 61H66L68 40Z" fill="url(#bolt)" stroke="#FEF08A" stroke-width="2" stroke-linejoin="round"/>
+</svg>

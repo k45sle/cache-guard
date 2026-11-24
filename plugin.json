@@ -1,0 +1,13 @@
+{
+  "name": "cache-guard",
+  "displayName": "Cache Guard",
+  "description": "Stops and warns before actions that cause total or massive prompt cache misses in Antigravity (mid-session customization edits, model switches, idle TTL expiry, and subagent definitions).",
+  "version": "0.1.0",
+  "author": {
+    "name": "Kassle",
+    "url": "https://github.com/k45sle"
+  },
+  "homepage": "https://github.com/k45sle/cache-guard",
+  "repository": "https://github.com/k45sle/cache-guard",
+  "logo": "assets/logo.svg"
+}
