@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # setup-python has no Python 3.9 build for Ubuntu 26.04 (ubuntu-latest) or for
+        # arm64 macOS (macos-latest), so 3.9 runs on Ubuntu 24.04 and Intel macOS
+        # (macos-15-intel, available until Aug 2027).
+        include:
+          - os: ubuntu-latest
+            python: "3.13"
+          - os: ubuntu-24.04
+            python: "3.9"
+          - os: macos-latest
+            python: "3.13"
+          - os: macos-15-intel
+            python: "3.9"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # cache_audit replays the old guard via `git show f2940cf`
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m unittest discover -s tests -v
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: shellcheck hooks/cache-guard.sh
+      - uses: astral-sh/setup-uv@v10.4.0 # setup-uv publishes no floating major tag
+      - run: uvx ruff check .

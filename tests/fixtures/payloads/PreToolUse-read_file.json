@@ -1,0 +1,23 @@
+{
+  "artifactDirectoryPath": "{HOME}/.gemini/antigravity-cli/brain/{CONV}",
+  "conversationId": "{CONV}",
+  "cwd": "{HOME}",
+  "hookEventName": "PreToolUse",
+  "lastUserInput": "Reply with one word: ok",
+  "modelName": "gemini-3.8-flash-low",
+  "stepIdx": 11,
+  "toolCall": {
+    "args": {
+      "EndLine": 800,
+      "Path": "{HOME}/big.txt",
+      "StartLine": 1
+    },
+    "id": "call_0001",
+    "name": "read_file"
+  },
+  "transcriptPath": "{HOME}/.gemini/antigravity-cli/brain/{CONV}/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "{HOME}",
+    "{WS}"
+  ]
+}

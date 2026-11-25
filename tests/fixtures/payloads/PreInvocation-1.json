@@ -1,0 +1,15 @@
+{
+  "artifactDirectoryPath": "{HOME}/.gemini/antigravity-cli/brain/{CONV}",
+  "conversationId": "{CONV}",
+  "cwd": "{HOME}",
+  "hookEventName": "PreInvocation",
+  "initialNumSteps": 4,
+  "invocationNum": 1,
+  "lastUserInput": "Reply with one word: ok",
+  "modelName": "gemini-3.8-flash-low",
+  "transcriptPath": "{HOME}/.gemini/antigravity-cli/brain/{CONV}/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "{HOME}",
+    "{WS}"
+  ]
+}

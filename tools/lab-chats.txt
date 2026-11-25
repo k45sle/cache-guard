@@ -1,0 +1,13 @@
+# Antigravity conversations started by cache-guard's own lab runs (idle-timeout and
+# edit experiments). cache_audit.py leaves them out unless --include-lab is given,
+# because their waits and edits were staged on purpose. One id per line.
+20496cef-5851-4a56-b89c-f1619a46455a  # idle runs C (Claude Sonnet, 6.5/12 min)
+5a651b03-ddf4-49ee-8191-e5f9b4e33086  # edit experiments E1-E6 and idle runs G (Gemini Flash, 7/16/32 min)
+f0966d6e-4612-4680-8426-d56d4215665c  # edit experiment E7 (rule edit mid-turn)
+d0682009-9977-4c22-925d-50b76221ba19  # idle run C2 (Claude Sonnet, 4/6.2 min)
+8e9763a2-da96-4ed2-a35f-b8be4a7b4946  # idle run G2 (Gemini Flash, 10 min)
+c8667168-c86c-4b35-8d7b-1b44fb7ed5df  # idle run G3 (Gemini Flash, 5/7.5 min)
+2ff558f7-5158-4482-b0b7-37e05f9884b0  # idle run N1 (Gemini 4 Neon High, 13 min; its 15-min probe was cut off)
+c8879b87-0221-4bb6-a2d6-08a23cbb07d9  # idle run N2 (Gemini 4 Neon High, 15 min)
+e560c7e9-ff1f-499a-b33f-44e12d3ba485  # v0.2 end to end A (Gemini Flash: switch, edits, agent edit, 45 s idle)
+d36f448a-ae66-4196-9829-308b3202874e  # v0.2 end to end B (Orchestrator: two plan-first hand-offs)

@@ -1,0 +1,18 @@
+{
+  "artifactDirectoryPath": "{HOME}/.gemini/antigravity-cli/brain/{CONV}",
+  "continuationActive": false,
+  "conversationId": "{CONV}",
+  "cwd": "{HOME}",
+  "error": "",
+  "executionNum": 0,
+  "fullyIdle": true,
+  "hookEventName": "Stop",
+  "lastUserInput": "Reply with one word: ok",
+  "modelName": "gemini-3.8-flash-low",
+  "terminationReason": "NO_TOOL_CALL",
+  "transcriptPath": "{HOME}/.gemini/antigravity-cli/brain/{CONV}/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "{HOME}",
+    "{WS}"
+  ]
+}

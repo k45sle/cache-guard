@@ -1,0 +1,24 @@
+{
+  "artifactDirectoryPath": "{HOME}/.gemini/antigravity-cli/brain/{CONV}",
+  "conversationId": "{CONV}",
+  "cwd": "{HOME}",
+  "error": "",
+  "hookEventName": "PostToolUse",
+  "lastUserInput": "Reply with one word: ok",
+  "modelName": "gemini-3.8-flash-low",
+  "stepIdx": 3,
+  "toolCall": {
+    "args": {
+      "CommandLine": "echo hello > note.txt",
+      "WaitMsBeforeAsync": 5000,
+      "toolSummary": "Create note.txt"
+    },
+    "id": "call_0001",
+    "name": "run_command"
+  },
+  "transcriptPath": "{HOME}/.gemini/antigravity-cli/brain/{CONV}/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "{HOME}",
+    "{WS}"
+  ]
+}
